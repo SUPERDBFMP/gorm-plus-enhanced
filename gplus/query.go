@@ -19,7 +19,7 @@ package gplus
 
 import (
 	"fmt"
-	"github.com/acmestack/gorm-plus/constants"
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/constants"
 	"reflect"
 	"strings"
 )

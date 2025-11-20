@@ -18,7 +18,7 @@
 package tests
 
 import (
-	"github.com/acmestack/gorm-plus/gplus"
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
 	"gorm.io/gorm"
 	"strings"
 	"testing"

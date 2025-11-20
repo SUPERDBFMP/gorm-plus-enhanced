@@ -18,7 +18,7 @@
 package gplus
 
 import (
-	"github.com/acmestack/gorm-plus/constants"
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/constants"
 	"strings"
 )
 

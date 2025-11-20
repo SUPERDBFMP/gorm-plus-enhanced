@@ -20,7 +20,7 @@ package tests
 import (
 	"errors"
 	"fmt"
-	"github.com/acmestack/gorm-plus/gplus"
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

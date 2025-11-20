@@ -53,7 +53,7 @@ VALUES
 下载Gorm-Plus
 
 ```SQL
- go get github.com/acmestack/gorm-plus
+ go get github.com/SUPERDBFMP/gorm-plus-enhanced
 ```
 
 
@@ -62,7 +62,7 @@ VALUES
 package main
 
 import (
-  "github.com/acmestack/gorm-plus/gplus"
+  "github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
   "gorm.io/driver/mysql"
   "gorm.io/gorm"
   "gorm.io/gorm/logger"
