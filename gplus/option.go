@@ -35,7 +35,7 @@ func Db(db *gorm.DB) OptionFunc {
 	}
 }
 
-// Session 创建回话
+// Session 创建会话
 func Session(session *gorm.Session) OptionFunc {
 	return func(o *Option) {
 		o.Db = globalDb.Session(session)

@@ -18,16 +18,18 @@
 package tests
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"reflect"
 	"sort"
 	"strconv"
 	"testing"
+
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var gormDb *gorm.DB
@@ -47,10 +49,11 @@ func init() {
 }
 
 func TestInsert(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 
 	user := &User{Username: "afumu", Password: "123456", Age: 18, Score: 100, Dept: "开发部门"}
-	resultDb := gplus.Insert(user)
+	resultDb := gplus.Insert(ctx, user)
 
 	if resultDb.Error != nil {
 		t.Fatalf("errors happened when insert: %v", resultDb.Error)
@@ -58,7 +61,7 @@ func TestInsert(t *testing.T) {
 		t.Fatalf("rows affected expects: %v, got %v", 1, resultDb.RowsAffected)
 	}
 
-	newUser, db := gplus.SelectById[User](user.ID)
+	newUser, db := gplus.SelectById[User](ctx, user.ID)
 	if db.Error != nil {
 		t.Fatalf("errors happened when SelectById: %v", db.Error)
 	}
@@ -66,15 +69,16 @@ func TestInsert(t *testing.T) {
 }
 
 func TestInsertBatch(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	resultDb := gplus.InsertBatch[User](users)
+	resultDb := gplus.InsertBatch[User](ctx, users)
 	if resultDb.RowsAffected != int64(len(users)) {
 		t.Errorf("affected rows should be %v, but got %v", len(users), resultDb.RowsAffected)
 	}
 
 	for _, user := range users {
-		newUser, db := gplus.SelectById[User](user.ID)
+		newUser, db := gplus.SelectById[User](ctx, user.ID)
 		if db.Error != nil {
 			t.Fatalf("errors happened when SelectById: %v", db.Error)
 		}
@@ -83,15 +87,16 @@ func TestInsertBatch(t *testing.T) {
 }
 
 func TestInsertBatchSize(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	resultDb := gplus.InsertBatchSize[User](users, 2)
+	resultDb := gplus.InsertBatchSize[User](ctx, users, 2)
 	if resultDb.RowsAffected != int64(len(users)) {
 		t.Errorf("affected rows should be %v, but got %v", len(users), resultDb.RowsAffected)
 	}
 
 	for _, user := range users {
-		newUser, db := gplus.SelectById[User](user.ID)
+		newUser, db := gplus.SelectById[User](ctx, user.ID)
 		if db.Error != nil {
 			t.Fatalf("errors happened when SelectById: %v", db.Error)
 		}
@@ -100,77 +105,81 @@ func TestInsertBatchSize(t *testing.T) {
 }
 
 func TestDeleteById(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatchSize[User](users, 2)
+	gplus.InsertBatchSize[User](ctx, users, 2)
 
-	if res := gplus.DeleteById[User](users[1].ID); res.Error != nil || res.RowsAffected != 1 {
+	if res := gplus.DeleteById[User](ctx, users[1].ID); res.Error != nil || res.RowsAffected != 1 {
 		t.Errorf("errors happened when deleteById: %v, affected: %v", res.Error, res.RowsAffected)
 	}
 
-	_, resultDb := gplus.SelectById[User](users[1].ID)
+	_, resultDb := gplus.SelectById[User](ctx, users[1].ID)
 	if !errors.Is(resultDb.Error, gorm.ErrRecordNotFound) {
 		t.Errorf("should returns record not found error, but got %v", resultDb.Error)
 	}
 }
 
 func TestDeleteByIds(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	userIds := []int64{users[0].ID, users[1].ID, users[2].ID}
-	if res := gplus.DeleteByIds[User](userIds); res.Error != nil || res.RowsAffected != 3 {
+	if res := gplus.DeleteByIds[User](ctx, userIds); res.Error != nil || res.RowsAffected != 3 {
 		t.Errorf("errors happened when deleteByIds: %v, affected: %v", res.Error, res.RowsAffected)
 	}
 
-	_, resultDb := gplus.SelectById[User](users[0].ID)
+	_, resultDb := gplus.SelectById[User](ctx, users[0].ID)
 	if !errors.Is(resultDb.Error, gorm.ErrRecordNotFound) {
 		t.Errorf("should returns record not found error, but got %v", resultDb.Error)
 	}
 
-	_, resultDb = gplus.SelectById[User](users[1].ID)
+	_, resultDb = gplus.SelectById[User](ctx, users[1].ID)
 	if !errors.Is(resultDb.Error, gorm.ErrRecordNotFound) {
 		t.Errorf("should returns record not found error, but got %v", resultDb.Error)
 	}
 
-	_, resultDb = gplus.SelectById[User](users[2].ID)
+	_, resultDb = gplus.SelectById[User](ctx, users[2].ID)
 	if !errors.Is(resultDb.Error, gorm.ErrRecordNotFound) {
 		t.Errorf("should returns record not found error, but got %v", resultDb.Error)
 	}
 }
 
 func TestDelete(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, u := gplus.NewQuery[User]()
 	query.Eq(&u.Username, "afumu1")
-	if res := gplus.Delete[User](query); res.Error != nil || res.RowsAffected != 1 {
+	if res := gplus.Delete[User](ctx, query); res.Error != nil || res.RowsAffected != 1 {
 		t.Errorf("errors happened when Delete: %v, affected: %v", res.Error, res.RowsAffected)
 	}
 
-	_, resultDb := gplus.SelectOne[User](query)
+	_, resultDb := gplus.SelectOne[User](ctx, query)
 	if !errors.Is(resultDb.Error, gorm.ErrRecordNotFound) {
 		t.Errorf("should returns record not found error, but got %v", resultDb.Error)
 	}
 }
 
 func TestUpdateById(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	user := users[0]
 	user.Score = 100
 	user.Age = 25
 
-	if res := gplus.UpdateById[User](user); res.Error != nil || res.RowsAffected != 1 {
+	if res := gplus.UpdateById[User](ctx, user); res.Error != nil || res.RowsAffected != 1 {
 		t.Errorf("errors happened when deleteByIds: %v, affected: %v", res.Error, res.RowsAffected)
 	}
 
-	newUser, db := gplus.SelectById[User](user.ID)
+	newUser, db := gplus.SelectById[User](ctx, user.ID)
 	if db.Error != nil {
 		t.Fatalf("errors happened when SelectById: %v", db.Error)
 	}
@@ -179,17 +188,18 @@ func TestUpdateById(t *testing.T) {
 }
 
 func TestUpdateZeroById(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	updateUser := &User{ID: users[0].ID, Score: 100, Age: 25, CreatedAt: users[0].CreatedAt}
 
-	if res := gplus.UpdateZeroById[User](updateUser); res.Error != nil || res.RowsAffected != 1 {
+	if res := gplus.UpdateZeroById[User](ctx, updateUser); res.Error != nil || res.RowsAffected != 1 {
 		t.Errorf("errors happened when deleteByIds: %v, affected: %v", res.Error, res.RowsAffected)
 	}
 
-	newUser, db := gplus.SelectById[User](updateUser.ID)
+	newUser, db := gplus.SelectById[User](ctx, updateUser.ID)
 	if db.Error != nil {
 		t.Fatalf("errors happened when SelectById: %v", db.Error)
 	}
@@ -198,17 +208,18 @@ func TestUpdateZeroById(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	user := users[0]
 	q, model := gplus.NewQuery[User]()
 	q.Eq(&model.ID, user.ID).Set(&model.Score, 60)
-	if err := gplus.Update(q).Error; err != nil {
+	if err := gplus.Update(ctx, q).Error; err != nil {
 		t.Errorf("errors happened when update: %v", err)
 	}
-	newUser, db := gplus.SelectById[User](user.ID)
+	newUser, db := gplus.SelectById[User](ctx, user.ID)
 	if db.Error != nil {
 		t.Fatalf("errors happened when SelectById: %v", db.Error)
 	}
@@ -217,11 +228,12 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestSelectById(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 	user := users[0]
-	resultUser, db := gplus.SelectById[User](user.ID)
+	resultUser, db := gplus.SelectById[User](ctx, user.ID)
 	if db.Error != nil {
 		t.Errorf("errors happened when selectById : %v", db.Error)
 	} else {
@@ -230,12 +242,13 @@ func TestSelectById(t *testing.T) {
 }
 
 func TestSelectByIds(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	userIds := []int64{users[0].ID, users[1].ID}
-	resultUsers, db := gplus.SelectByIds[User](userIds)
+	resultUsers, db := gplus.SelectByIds[User](ctx, userIds)
 	if db.Error != nil {
 		t.Errorf("errors happened when selectByIds : %v", db.Error)
 	} else {
@@ -245,13 +258,14 @@ func TestSelectByIds(t *testing.T) {
 }
 
 func TestSelectOne(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, model := gplus.NewQuery[User]()
 	query.Eq(&model.Username, users[0].Username)
-	resultUser, db := gplus.SelectOne[User](query)
+	resultUser, db := gplus.SelectOne[User](ctx, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when selectByOne : %v", db.Error)
 	} else {
@@ -260,13 +274,14 @@ func TestSelectOne(t *testing.T) {
 }
 
 func TestSelectList(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, model := gplus.NewQuery[User]()
 	query.Eq(&model.Username, users[0].Username).Or().Eq(&model.Username, users[5].Username)
-	resultUsers, db := gplus.SelectList(query)
+	resultUsers, db := gplus.SelectList(ctx, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when SelectList : %v", db.Error)
 	} else {
@@ -276,14 +291,15 @@ func TestSelectList(t *testing.T) {
 }
 
 func TestSelectPage(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, model := gplus.NewQuery[User]()
 	page := gplus.NewPage[User](1, 10)
 	query.Eq(&model.Username, users[0].Username).Or().Eq(&model.Username, users[5].Username)
-	resultPage, db := gplus.SelectPage(page, query)
+	resultPage, db := gplus.SelectPage(ctx, page, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when selectByIds : %v", db.Error)
 	}
@@ -297,14 +313,15 @@ func TestSelectPage(t *testing.T) {
 }
 
 func TestSelectPageDefaultPageParam(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, model := gplus.NewQuery[User]()
 	page := gplus.NewPage[User](0, 0)
 	query.Eq(&model.Username, users[0].Username).Or().Eq(&model.Username, users[5].Username)
-	resultPage, db := gplus.SelectPage(page, query)
+	resultPage, db := gplus.SelectPage(ctx, page, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when selectByIds : %v", db.Error)
 	}
@@ -317,9 +334,10 @@ func TestSelectPageDefaultPageParam(t *testing.T) {
 }
 
 func TestSelectPageGeneric2(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	type UserVo struct {
 		ID       int64
@@ -331,7 +349,7 @@ func TestSelectPageGeneric2(t *testing.T) {
 	page := gplus.NewPage[UserVo](1, 10)
 	query.Eq(&model.Username, users[0].Username).Or().Eq(&model.Username, users[5].Username)
 
-	resultPage, db := gplus.SelectPageGeneric[User, UserVo](page, query)
+	resultPage, db := gplus.SelectPageGeneric[User, UserVo](ctx, page, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when selectByIds : %v", db.Error)
 	}
@@ -345,15 +363,16 @@ func TestSelectPageGeneric2(t *testing.T) {
 }
 
 func TestSelectPageGeneric3(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, model := gplus.NewQuery[User]()
 	page := gplus.NewPage[map[string]any](1, 10)
 	query.Eq(&model.Username, users[0].Username).Or().Eq(&model.Username, users[5].Username)
 
-	resultPage, db := gplus.SelectPageGeneric[User, map[string]any](page, query)
+	resultPage, db := gplus.SelectPageGeneric[User, map[string]any](ctx, page, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when selectByIds : %v", db.Error)
 	}
@@ -373,13 +392,14 @@ func TestSelectPageGeneric3(t *testing.T) {
 }
 
 func TestSelectCount(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, model := gplus.NewQuery[User]()
 	query.Eq(&model.Username, users[0].Username).Or().Eq(&model.Username, users[5].Username)
-	count, db := gplus.SelectCount(query)
+	count, db := gplus.SelectCount(ctx, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when SelectCount : %v", db.Error)
 	}
@@ -389,13 +409,14 @@ func TestSelectCount(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	query, model := gplus.NewQuery[User]()
 	query.Eq(&model.Username, users[0].Username)
-	exists, db := gplus.Exists[User](query)
+	exists, db := gplus.Exists[User](ctx, query)
 	if db.Error != nil {
 		t.Errorf("errors happened when SelectCount : %v", db.Error)
 	}
@@ -405,16 +426,17 @@ func TestExists(t *testing.T) {
 }
 
 func TestSelectGeneric1(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 	type UserVo struct {
 		Username string
 		Age      int
 	}
 	query, u := gplus.NewQuery[User]()
 	query.Eq(&u.Username, users[0].Username)
-	userVo, resultDb := gplus.SelectGeneric[User, UserVo](query)
+	userVo, resultDb := gplus.SelectGeneric[User, UserVo](ctx, query)
 
 	if resultDb.Error != nil {
 		t.Errorf("errors happened when resultDb : %v", resultDb.Error)
@@ -426,9 +448,10 @@ func TestSelectGeneric1(t *testing.T) {
 }
 
 func TestSelectGeneric2(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 	type UserVo struct {
 		Name string
 		Age  int
@@ -436,7 +459,7 @@ func TestSelectGeneric2(t *testing.T) {
 	query, u := gplus.NewQuery[User]()
 	uvo := gplus.GetModel[UserVo]()
 	query.Eq(&u.Username, users[0].Username).Select(gplus.As(&u.Username, &uvo.Name), &u.Age)
-	userVo, resultDb := gplus.SelectGeneric[User, UserVo](query)
+	userVo, resultDb := gplus.SelectGeneric[User, UserVo](ctx, query)
 
 	if resultDb.Error != nil {
 		t.Errorf("errors happened when resultDb : %v", resultDb.Error)
@@ -448,9 +471,10 @@ func TestSelectGeneric2(t *testing.T) {
 }
 
 func TestSelectGeneric3(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 	type UserVo struct {
 		TotalAge int
 	}
@@ -463,7 +487,7 @@ func TestSelectGeneric3(t *testing.T) {
 	model := gplus.GetModel[UserVo]()
 	fmt.Println(model)
 	query.Select(gplus.Sum(&u.Age).As(&uvo.TotalAge))
-	userVo, resultDb := gplus.SelectGeneric[User, UserVo](query)
+	userVo, resultDb := gplus.SelectGeneric[User, UserVo](ctx, query)
 
 	if resultDb.Error != nil {
 		t.Errorf("errors happened when resultDb : %v", resultDb.Error)
@@ -475,16 +499,17 @@ func TestSelectGeneric3(t *testing.T) {
 }
 
 func TestSelectGeneric4(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 	var totalAge int
 	for _, user := range users {
 		totalAge += user.Age
 	}
 	query, u := gplus.NewQuery[User]()
 	query.Select(gplus.Sum(&u.Age))
-	total, resultDb := gplus.SelectGeneric[User, int](query)
+	total, resultDb := gplus.SelectGeneric[User, int](ctx, query)
 
 	if resultDb.Error != nil {
 		t.Errorf("errors happened when resultDb : %v", resultDb.Error)
@@ -496,9 +521,10 @@ func TestSelectGeneric4(t *testing.T) {
 }
 
 func TestSelectGeneric5(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 
 	var ages []int
 	var agesMap = make(map[int]struct{})
@@ -511,7 +537,7 @@ func TestSelectGeneric5(t *testing.T) {
 	sort.Ints(ages)
 	query, u := gplus.NewQuery[User]()
 	query.Select(&u.Age).Distinct(&u.Age)
-	allAges, _ := gplus.SelectGeneric[User, []int](query)
+	allAges, _ := gplus.SelectGeneric[User, []int](ctx, query)
 	sort.Ints(allAges)
 	if !reflect.DeepEqual(allAges, ages) {
 		t.Errorf("errors happened when SelectGeneric")
@@ -519,9 +545,10 @@ func TestSelectGeneric5(t *testing.T) {
 }
 
 func TestSelectGeneric6(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 	type UserVo struct {
 		Dept  string
 		Score int
@@ -533,7 +560,7 @@ func TestSelectGeneric6(t *testing.T) {
 	query, u := gplus.NewQuery[User]()
 	uvo := gplus.GetModel[UserVo]()
 	query.Select(&u.Dept, gplus.Sum(&u.Score).As(&uvo.Score)).Group(&u.Dept)
-	UserVos, resultDb := gplus.SelectGeneric[User, []UserVo](query)
+	UserVos, resultDb := gplus.SelectGeneric[User, []UserVo](ctx, query)
 
 	if resultDb.Error != nil {
 		t.Errorf("errors happened when resultDb : %v", resultDb.Error)
@@ -548,16 +575,17 @@ func TestSelectGeneric6(t *testing.T) {
 }
 
 func TestSelectGeneric7(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	gplus.InsertBatch[User](users)
+	gplus.InsertBatch[User](ctx, users)
 	var userMap = make(map[string]int)
 	for _, user := range users {
 		userMap[user.Dept] += user.Score
 	}
 	query, u := gplus.NewQuery[User]()
 	query.Select(&u.Dept, gplus.Sum(&u.Score).As("score")).Group(&u.Dept)
-	UserVos, resultDb := gplus.SelectGeneric[User, []map[string]any](query)
+	UserVos, resultDb := gplus.SelectGeneric[User, []map[string]any](ctx, query)
 
 	if resultDb.Error != nil {
 		t.Errorf("errors happened when resultDb : %v", resultDb.Error)
@@ -578,10 +606,11 @@ func TestSelectGeneric7(t *testing.T) {
 }
 
 func TestTx(t *testing.T) {
+	ctx := context.Background()
 	deleteOldData()
 	users := getUsers()
-	err := gplus.Tx(func(tx *gorm.DB) error {
-		err := gplus.InsertBatch[User](users, gplus.Db(tx)).Error
+	err := gplus.Tx(ctx, func(tx *gorm.DB) error {
+		err := gplus.InsertBatch[User](ctx, users, gplus.Db(tx)).Error
 		return err
 	})
 	if err != nil {
@@ -590,9 +619,10 @@ func TestTx(t *testing.T) {
 }
 
 func deleteOldData() {
+	ctx := context.Background()
 	q, u := gplus.NewQuery[User]()
 	q.IsNotNull(&u.ID)
-	gplus.Delete(q)
+	gplus.Delete(ctx, q)
 }
 
 func getUsers() []*User {

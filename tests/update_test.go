@@ -18,57 +18,65 @@
 package tests
 
 import (
-	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
-	"gorm.io/gorm"
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
+	"gorm.io/gorm"
 )
 
 func TestUpdateByIdName(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `score`=100 WHERE `id` = 1"
 	sessionDb := checkUpdateSql(t, expectSql)
 	var user = &User{ID: 1, Score: 100}
 	u := gplus.GetModel[User]()
-	gplus.UpdateById(user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.UpdateById(ctx, user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdateZeroByIdName(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `username`='',`password`='',`address`='',`age`=0,`phone`='',`score`=100,`dept`='' WHERE `id` = 1"
 	sessionDb := checkUpdateSql(t, expectSql)
 	var user = &User{ID: 1, Score: 100}
 	u := gplus.GetModel[User]()
-	gplus.UpdateZeroById(user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.UpdateZeroById(ctx, user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdate1Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `score`=100 WHERE id = 1"
 	sessionDb := checkUpdateSql(t, expectSql)
 	query, u := gplus.NewQuery[User]()
 	query.Eq(&u.ID, 1).Set(&u.Score, 100)
-	gplus.Update(query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Update(ctx, query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdate2Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `address`='shanghai',`score`=100 WHERE username = 'afumu' AND age = 18"
 	sessionDb := checkUpdateSql(t, expectSql)
 	query, u := gplus.NewQuery[User]()
 	query.Eq(&u.Username, "afumu").Eq(&u.Age, 18).
 		Set(&u.Score, 100).
 		Set(&u.Address, "shanghai")
-	gplus.Update(query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Update(ctx, query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdate3Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `address`='shanghai',`score`=100 WHERE username = 'afumu' OR age = 18"
 	sessionDb := checkUpdateSql(t, expectSql)
 	query, u := gplus.NewQuery[User]()
 	query.Eq(&u.Username, "afumu").Or().Eq(&u.Age, 18).
 		Set(&u.Score, 100).
 		Set(&u.Address, "shanghai")
-	gplus.Update(query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Update(ctx, query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdate4Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `address`='shanghai',`score`=100 WHERE username = 'afumu' OR ( age = 18 AND score = 100 )"
 	sessionDb := checkUpdateSql(t, expectSql)
 	query, u := gplus.NewQuery[User]()
@@ -77,10 +85,11 @@ func TestUpdate4Name(t *testing.T) {
 	}).
 		Set(&u.Score, 100).
 		Set(&u.Address, "shanghai")
-	gplus.Update(query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Update(ctx, query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdate5Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `address`='shanghai',`score`=100 WHERE username = 'afumu' AND ( age = 18 OR score = 100 )"
 	sessionDb := checkUpdateSql(t, expectSql)
 	query, u := gplus.NewQuery[User]()
@@ -90,27 +99,29 @@ func TestUpdate5Name(t *testing.T) {
 		}).
 		Set(&u.Score, 100).
 		Set(&u.Address, "shanghai")
-	gplus.Update(query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Update(ctx, query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdate6Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `address`='shanghai',`score`=100 WHERE username <> 'afumu'"
 	sessionDb := checkUpdateSql(t, expectSql)
 	query, u := gplus.NewQuery[User]()
 	query.Ne(&u.Username, "afumu").
 		Set(&u.Score, 100).
 		Set(&u.Address, "shanghai")
-	gplus.Update(query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Update(ctx, query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestUpdate7Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "UPDATE `Users` SET `address`='shanghai',`score`=100 WHERE username IS NULL"
 	sessionDb := checkUpdateSql(t, expectSql)
 	query, u := gplus.NewQuery[User]()
 	query.IsNull(&u.Username).
 		Set(&u.Score, 100).
 		Set(&u.Address, "shanghai")
-	gplus.Update(query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Update(ctx, query, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func checkUpdateSql(t *testing.T, expect string) *gorm.DB {

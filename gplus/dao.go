@@ -20,13 +20,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"reflect"
+	"strings"
+	"time"
+
 	"github.com/SUPERDBFMP/gorm-plus-enhanced/constants"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"gorm.io/gorm/utils"
-	"reflect"
-	"strings"
-	"time"
 )
 
 var globalDb *gorm.DB
@@ -371,48 +372,48 @@ func streamingPaginate[T any, V Comparable](ctx context.Context, p *StreamingPag
 
 func buildCondition[T any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) *gorm.DB {
 	db := getDb(ctx, opts...)
-	resultDb := db.Model(new(T))
+	resultDb := db.WithContext(ctx).Model(new(T))
 	if q != nil {
 		// 这里清空参数，避免用户重复使用一个query条件
 		q.queryArgs = make([]any, 0)
 
 		if len(q.distinctColumns) > 0 {
-			resultDb.Distinct(q.distinctColumns)
+			resultDb.WithContext(ctx).Distinct(q.distinctColumns)
 		}
 
 		if len(q.selectColumns) > 0 {
-			resultDb.Select(q.selectColumns)
+			resultDb.WithContext(ctx).Select(q.selectColumns)
 		}
 
 		if len(q.omitColumns) > 0 {
-			resultDb.Omit(q.omitColumns...)
+			resultDb.WithContext(ctx).Omit(q.omitColumns...)
 		}
 
 		expressions := q.queryExpressions
 		if len(expressions) > 0 {
 			var sqlBuilder strings.Builder
 			q.queryArgs = buildSqlAndArgs[T](expressions, &sqlBuilder, q.queryArgs)
-			resultDb.Where(sqlBuilder.String(), q.queryArgs...)
+			resultDb.WithContext(ctx).Where(sqlBuilder.String(), q.queryArgs...)
 		}
 
 		if q.orderBuilder.Len() > 0 {
-			resultDb.Order(q.orderBuilder.String())
+			resultDb.WithContext(ctx).Order(q.orderBuilder.String())
 		}
 
 		if q.groupBuilder.Len() > 0 {
-			resultDb.Group(q.groupBuilder.String())
+			resultDb.WithContext(ctx).Group(q.groupBuilder.String())
 		}
 
 		if q.havingBuilder.Len() > 0 {
-			resultDb.Having(q.havingBuilder.String(), q.havingArgs...)
+			resultDb.WithContext(ctx).Having(q.havingBuilder.String(), q.havingArgs...)
 		}
 
-		if q.limit != nil {
-			resultDb.Limit(*q.limit)
+		if q.limit != 0 {
+			resultDb.WithContext(ctx).Limit(q.limit)
 		}
 
 		if q.offset != 0 {
-			resultDb.Offset(q.offset)
+			resultDb.WithContext(ctx).Offset(q.offset)
 		}
 	}
 	return resultDb

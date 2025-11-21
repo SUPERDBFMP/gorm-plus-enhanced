@@ -18,46 +18,53 @@
 package tests
 
 import (
-	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
-	"gorm.io/gorm"
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/gplus"
+	"gorm.io/gorm"
 )
 
 func TestInsert1Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "INSERT INTO `Users` (`username`,`password`,`address`,`age`,`phone`,`score`,`dept`) VALUES ('afumu','123456','',18,'',12,'研发部门')"
 	user := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
 	u := gplus.GetModel[User]()
 	sessionDb := checkInsertSql(t, expectSql)
-	gplus.Insert(&user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Insert(ctx, &user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestInsert2Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "INSERT INTO `Users` (`username`,`password`,`address`,`age`,`phone`,`score`) VALUES ('afumu','123456','',18,'',12)"
 	user := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
 	u := gplus.GetModel[User]()
 	sessionDb := checkInsertSql(t, expectSql)
-	gplus.Insert(&user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt, &u.Dept))
+	gplus.Insert(ctx, &user, gplus.Db(sessionDb), gplus.Omit(&u.CreatedAt, &u.UpdatedAt, &u.Dept))
 }
 
 func TestInsert3Name(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "INSERT INTO `Users` (`username`,`password`) VALUES ('afumu','123456')"
 	user := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
 	u := gplus.GetModel[User]()
 	sessionDb := checkInsertSql(t, expectSql)
-	gplus.Insert(&user, gplus.Db(sessionDb), gplus.Select(&u.Username, &u.Password), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.Insert(ctx, &user, gplus.Db(sessionDb), gplus.Select(&u.Username, &u.Password), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestInsertBatchName(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "INSERT INTO `Users` (`username`,`password`) VALUES ('afumu','123456'),('afumu','123456')"
 	user := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
 	user2 := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
 	sessionDb := checkInsertSql(t, expectSql)
 	u := gplus.GetModel[User]()
-	gplus.InsertBatch([]*User{user, user2}, gplus.Db(sessionDb), gplus.Select(&u.Username, &u.Password), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.InsertBatch(ctx, []*User{user, user2}, gplus.Db(sessionDb), gplus.Select(&u.Username, &u.Password), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func TestInsertBatchSizeName(t *testing.T) {
+	ctx := context.Background()
 	var expectSql = "INSERT INTO `Users` (`username`,`password`) VALUES ('afumu','123456'),('afumu','123456')"
 	user := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
 	user2 := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
@@ -65,7 +72,7 @@ func TestInsertBatchSizeName(t *testing.T) {
 	user4 := &User{Username: "afumu", Password: "123456", Age: 18, Score: 12, Dept: "研发部门"}
 	sessionDb := checkInsertSql(t, expectSql)
 	u := gplus.GetModel[User]()
-	gplus.InsertBatchSize([]*User{user, user2, user3, user4}, 2, gplus.Db(sessionDb), gplus.Select(&u.Username, &u.Password), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
+	gplus.InsertBatchSize(ctx, []*User{user, user2, user3, user4}, 2, gplus.Db(sessionDb), gplus.Select(&u.Username, &u.Password), gplus.Omit(&u.CreatedAt, &u.UpdatedAt))
 }
 
 func checkInsertSql(t *testing.T, expect string) *gorm.DB {

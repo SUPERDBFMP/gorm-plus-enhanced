@@ -19,9 +19,10 @@ package gplus
 
 import (
 	"fmt"
-	"github.com/SUPERDBFMP/gorm-plus-enhanced/constants"
 	"reflect"
 	"strings"
+
+	"github.com/SUPERDBFMP/gorm-plus-enhanced/constants"
 )
 
 type QueryCond[T any] struct {
@@ -35,7 +36,7 @@ type QueryCond[T any] struct {
 	havingArgs       []any
 	queryArgs        []any
 	last             any
-	limit            *int
+	limit            int
 	offset           int
 	updateMap        map[string]any
 	columnTypeMap    map[string]reflect.Type
@@ -193,6 +194,15 @@ func (q *QueryCond[T]) In(column any, val any) *QueryCond[T] {
 // NotIn 字段 NOT IN (值1, 值2, ...)
 func (q *QueryCond[T]) NotIn(column any, val any) *QueryCond[T] {
 	q.addExpression(q.buildSqlSegment(column, constants.Not+" "+constants.In, val)...)
+	return q
+}
+
+// Limit 限制数量
+func (q *QueryCond[T]) Limit(val int, offset ...int) *QueryCond[T] {
+	q.limit = val
+	if len(offset) > 0 {
+		q.offset = offset[0]
+	}
 	return q
 }
 
