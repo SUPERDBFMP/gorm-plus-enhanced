@@ -86,14 +86,14 @@ func NewStreamingPage[T any, V Comparable](columnName any, startValue V, limit i
 
 // Insert 插入一条记录
 func Insert[T any](ctx context.Context, entity *T, opts ...OptionFunc) *gorm.DB {
-	db := getDb(ctx, opts...)
+	db := getDb(opts...)
 	resultDb := db.WithContext(ctx).Create(entity)
 	return resultDb
 }
 
 // InsertBatch 批量插入多条记录
 func InsertBatch[T any](ctx context.Context, entities []*T, opts ...OptionFunc) *gorm.DB {
-	db := getDb(ctx, opts...)
+	db := getDb(opts...)
 	if len(entities) == 0 {
 		return db
 	}
@@ -103,7 +103,7 @@ func InsertBatch[T any](ctx context.Context, entities []*T, opts ...OptionFunc) 
 
 // InsertBatchSize 批量插入多条记录
 func InsertBatchSize[T any](ctx context.Context, entities []*T, batchSize int, opts ...OptionFunc) *gorm.DB {
-	db := getDb(ctx, opts...)
+	db := getDb(opts...)
 	if len(entities) == 0 {
 		return db
 	}
@@ -116,7 +116,7 @@ func InsertBatchSize[T any](ctx context.Context, entities []*T, batchSize int, o
 
 // DeleteById 根据 ID 删除记录
 func DeleteById[T any](ctx context.Context, id any, opts ...OptionFunc) *gorm.DB {
-	db := getDb(ctx, opts...)
+	db := getDb(opts...)
 	var entity T
 	resultDb := db.WithContext(ctx).Where(getPkColumnName[T](), id).Delete(&entity)
 	return resultDb
@@ -133,21 +133,21 @@ func DeleteByIds[T any](ctx context.Context, ids any, opts ...OptionFunc) *gorm.
 // Delete 根据条件删除记录
 func Delete[T any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) *gorm.DB {
 	var entity T
-	resultDb := buildCondition[T](ctx, q, opts...)
+	resultDb := buildCondition[T](q, opts...)
 	resultDb.WithContext(ctx).Delete(&entity)
 	return resultDb
 }
 
 // UpdateById 根据 ID 更新,默认零值不更新
 func UpdateById[T any](ctx context.Context, entity *T, opts ...OptionFunc) *gorm.DB {
-	db := getDb(ctx, opts...)
+	db := getDb(opts...)
 	resultDb := db.WithContext(ctx).Model(entity).Updates(entity)
 	return resultDb
 }
 
 // UpdateZeroById 根据 ID 零值更新
 func UpdateZeroById[T any](ctx context.Context, entity *T, opts ...OptionFunc) *gorm.DB {
-	db := getDb(ctx, opts...)
+	db := getDb(opts...)
 
 	// 如果用户没有设置选择更新的字段，默认更新所有的字段，包括零值更新
 	updateAllIfNeed(ctx, entity, opts, db)
@@ -170,7 +170,7 @@ func updateAllIfNeed(ctx context.Context, entity any, opts []OptionFunc, db *gor
 
 // Update 根据 Map 更新
 func Update[T any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) *gorm.DB {
-	resultDb := buildCondition[T](ctx, q, opts...)
+	resultDb := buildCondition[T](q, opts...)
 	resultDb.WithContext(ctx).Updates(&q.updateMap)
 	return resultDb
 }
@@ -180,7 +180,7 @@ func SelectById[T any](ctx context.Context, id any, opts ...OptionFunc) (*T, *go
 	q, _ := NewQuery[T]()
 	q.Eq(getPkColumnName[T](), id)
 	var entity T
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	return &entity, resultDb.WithContext(ctx).Take(&entity)
 }
 
@@ -194,13 +194,13 @@ func SelectByIds[T any](ctx context.Context, ids any, opts ...OptionFunc) ([]*T,
 // SelectOne 根据条件查询单条记录
 func SelectOne[T any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) (*T, *gorm.DB) {
 	var entity T
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	return &entity, resultDb.WithContext(ctx).Take(&entity)
 }
 
 // SelectList 根据条件查询多条记录
 func SelectList[T any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) ([]*T, *gorm.DB) {
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	var results []*T
 	resultDb.WithContext(ctx).Find(&results)
 	return results, resultDb
@@ -219,7 +219,7 @@ func SelectPage[T any](ctx context.Context, page *Page[T], q *QueryCond[T], opts
 		page.Total = total
 	}
 
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	var results []*T
 	resultDb.Scopes(paginate(ctx, page)).Find(&results)
 	page.Records = results
@@ -239,7 +239,7 @@ func SelectStreamingPage[T any, V Comparable](ctx context.Context, page *Streami
 		page.Total = total
 	}
 
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	var results []*T
 	resultDb.Scopes(streamingPaginate(ctx, page)).Find(&results)
 	page.Records = results
@@ -249,7 +249,7 @@ func SelectStreamingPage[T any, V Comparable](ctx context.Context, page *Streami
 // SelectCount 根据条件查询记录数量
 func SelectCount[T any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) (int64, *gorm.DB) {
 	var count int64
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	//fix 查询有设置Select并且数量只有一个且有设置别名,生成sql不对问题
 	resultDb.Statement.Selects = nil
 	resultDb.WithContext(ctx).Count(&count)
@@ -275,7 +275,7 @@ func SelectPageGeneric[T any, R any](ctx context.Context, page *Page[R], q *Quer
 		}
 		page.Total = total
 	}
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	var r R
 	switch any(r).(type) {
 	case map[string]any:
@@ -303,7 +303,7 @@ func SelectStreamingPageGeneric[T any, R any, V Comparable](ctx context.Context,
 		}
 		page.Total = total
 	}
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	var r R
 	switch any(r).(type) {
 	case map[string]any:
@@ -323,18 +323,18 @@ func SelectStreamingPageGeneric[T any, R any, V Comparable](ctx context.Context,
 // 第二个泛型代表返回记录实体
 func SelectGeneric[T any, R any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) (R, *gorm.DB) {
 	var entity R
-	resultDb := buildCondition(ctx, q, opts...)
+	resultDb := buildCondition(q, opts...)
 	return entity, resultDb.WithContext(ctx).Scan(&entity)
 }
 
 func Begin(ctx context.Context, opts ...*sql.TxOptions) *gorm.DB {
-	db := getDb(ctx)
+	db := getDb()
 	return db.WithContext(ctx).Begin(opts...)
 }
 
 // Tx 事务
 func Tx(ctx context.Context, txFunc func(tx *gorm.DB) error, opts ...OptionFunc) error {
-	db := getDb(ctx, opts...)
+	db := getDb(opts...)
 	return db.WithContext(ctx).Transaction(txFunc)
 }
 
@@ -370,50 +370,50 @@ func streamingPaginate[T any, V Comparable](ctx context.Context, p *StreamingPag
 	}
 }
 
-func buildCondition[T any](ctx context.Context, q *QueryCond[T], opts ...OptionFunc) *gorm.DB {
-	db := getDb(ctx, opts...)
-	resultDb := db.WithContext(ctx).Model(new(T))
+func buildCondition[T any](q *QueryCond[T], opts ...OptionFunc) *gorm.DB {
+	db := getDb(opts...)
+	resultDb := db.Model(new(T))
 	if q != nil {
 		// 这里清空参数，避免用户重复使用一个query条件
 		q.queryArgs = make([]any, 0)
 
 		if len(q.distinctColumns) > 0 {
-			resultDb.WithContext(ctx).Distinct(q.distinctColumns)
+			resultDb.Distinct(q.distinctColumns)
 		}
 
 		if len(q.selectColumns) > 0 {
-			resultDb.WithContext(ctx).Select(q.selectColumns)
+			resultDb.Select(q.selectColumns)
 		}
 
 		if len(q.omitColumns) > 0 {
-			resultDb.WithContext(ctx).Omit(q.omitColumns...)
+			resultDb.Omit(q.omitColumns...)
 		}
 
 		expressions := q.queryExpressions
 		if len(expressions) > 0 {
 			var sqlBuilder strings.Builder
 			q.queryArgs = buildSqlAndArgs[T](expressions, &sqlBuilder, q.queryArgs)
-			resultDb.WithContext(ctx).Where(sqlBuilder.String(), q.queryArgs...)
+			resultDb.Where(sqlBuilder.String(), q.queryArgs...)
 		}
 
 		if q.orderBuilder.Len() > 0 {
-			resultDb.WithContext(ctx).Order(q.orderBuilder.String())
+			resultDb.Order(q.orderBuilder.String())
 		}
 
 		if q.groupBuilder.Len() > 0 {
-			resultDb.WithContext(ctx).Group(q.groupBuilder.String())
+			resultDb.Group(q.groupBuilder.String())
 		}
 
 		if q.havingBuilder.Len() > 0 {
-			resultDb.WithContext(ctx).Having(q.havingBuilder.String(), q.havingArgs...)
+			resultDb.Having(q.havingBuilder.String(), q.havingArgs...)
 		}
 
 		if q.limit != 0 {
-			resultDb.WithContext(ctx).Limit(q.limit)
+			resultDb.Limit(q.limit)
 		}
 
 		if q.offset != 0 {
-			resultDb.WithContext(ctx).Offset(q.offset)
+			resultDb.Offset(q.offset)
 		}
 	}
 	return resultDb
@@ -450,13 +450,13 @@ func buildSqlAndArgs[T any](expressions []any, sqlBuilder *strings.Builder, quer
 	return queryArgs
 }
 
-func getDb(ctx context.Context, opts ...OptionFunc) *gorm.DB {
+func getDb(opts ...OptionFunc) *gorm.DB {
 	option := getOption(opts)
 	// Clauses()目的是为了初始化Db，如果db已经被初始化了,会直接返回db
 	var db = globalDb.Clauses()
 
 	if option.Db != nil {
-		db = option.Db.WithContext(ctx).Clauses()
+		db = option.Db.Clauses()
 	}
 
 	// 设置需要忽略的字段
