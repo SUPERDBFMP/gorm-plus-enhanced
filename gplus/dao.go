@@ -465,6 +465,8 @@ func getDb(opts ...OptionFunc) *gorm.DB {
 	// 设置选择的字段
 	setSelectIfNeed(option, db)
 
+	setTableName(option, db)
+
 	return db
 }
 
@@ -495,6 +497,12 @@ func setOmitIfNeed(option Option, db *gorm.DB) {
 			columnNames = append(columnNames, columnName)
 		}
 		db.Omit(columnNames...)
+	}
+}
+
+func setTableName(option Option, db *gorm.DB) {
+	if len(option.TableName) > 0 {
+		db.Table(option.TableName)
 	}
 }
 

@@ -24,6 +24,7 @@ type Option struct {
 	Selects     []any
 	Omits       []any
 	IgnoreTotal bool
+	TableName   string
 }
 
 type OptionFunc func(*Option)
@@ -60,5 +61,11 @@ func Omit(columns ...any) OptionFunc {
 func IgnoreTotal() OptionFunc {
 	return func(o *Option) {
 		o.IgnoreTotal = true
+	}
+}
+
+func TableName(name string) OptionFunc {
+	return func(o *Option) {
+		o.TableName = name
 	}
 }
