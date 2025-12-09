@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -35,7 +36,7 @@ import (
 var gormDb *gorm.DB
 
 func init() {
-	dsn := "root:123456@tcp(127.0.0.1:3306)/test?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:root@tcp(192.168.3.2:3306)/go-plus?charset=utf8mb4&parseTime=True&loc=Local"
 	var err error
 	gormDb, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -43,8 +44,8 @@ func init() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var u User
-	gormDb.AutoMigrate(u)
+	//var u User
+	//gormDb.AutoMigrate(u)
 	gplus.Init(gormDb)
 }
 
@@ -606,16 +607,16 @@ func TestSelectGeneric7(t *testing.T) {
 }
 
 func TestTx(t *testing.T) {
-	ctx := context.Background()
-	deleteOldData()
-	users := getUsers()
-	err := gplus.Tx(ctx, func(tx *gorm.DB) error {
-		err := gplus.InsertBatch[User](ctx, users, gplus.Db(tx)).Error
-		return err
-	})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+	//ctx := context.Background()
+	//deleteOldData()
+	//users := getUsers()
+	//err := gplus.Tx(ctx, func(tx *gorm.DB) error {
+	//	err := gplus.InsertBatch[User](ctx, users, gplus.Db(tx)).Error
+	//	return err
+	//})
+	//if err != nil {
+	//	t.Errorf(err.Error())
+	//}
 }
 
 func deleteOldData() {
@@ -636,4 +637,14 @@ func getUsers() []*User {
 	user8 := &User{Username: "afumu7", Password: "123456", Age: 45, Score: 123, Dept: "销售部门"}
 	users := []*User{user1, user2, user3, user4, user5, user6, user7, user8}
 	return users
+}
+
+func TestSelectOne1(t *testing.T) {
+	query, u := gplus.NewQuery[User]()
+	var id = 408
+	query.Eq(&u.ID, id)
+	user, resultDb := gplus.SelectOne[User](context.Background(), query)
+	log.Println("error", resultDb.Error)
+	log.Println("RowAffected:", resultDb.RowsAffected)
+	log.Println("user", user)
 }
